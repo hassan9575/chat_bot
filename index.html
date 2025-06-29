@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chatbot</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f6f8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .chatbot-container {
+      background-color: #fff;
+      width: 350px;
+      max-height: 600px;
+      border-radius: 16px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .chat-header {
+      background-color: #4f46e5;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.2em;
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 1rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .message {
+      max-width: 80%;
+      padding: 0.75rem 1rem;
+      border-radius: 20px;
+      line-height: 1.4;
+    }
+
+    .user {
+      align-self: flex-end;
+      background-color: #e0e7ff;
+    }
+
+    .bot {
+      align-self: flex-start;
+      background-color: #f3f4f6;
+    }
+
+    .chat-input {
+      display: flex;
+      border-top: 1px solid #ddd;
+    }
+
+    .chat-input input {
+      flex: 1;
+      padding: 0.75rem;
+      border: none;
+      font-size: 1em;
+      outline: none;
+    }
+
+    .chat-input button {
+      background-color: #4f46e5;
+      color: white;
+      border: none;
+      padding: 0 1rem;
+      cursor: pointer;
+      font-size: 1em;
+    }
+
+    .chat-input button:hover {
+      background-color: #4338ca;
+    }
+  </style>
+</head>
+<body>
+  <div class="chatbot-container">
+    <div class="chat-header">🤖 Chatbot</div>
+    <div class="chat-messages" id="chat">
+      <div class="message bot">Hi! How can I help you today?</div>
+    </div>
+    <div class="chat-input">
+      <input type="text" id="user-input" placeholder="Type a message..." />
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    const chat = document.getElementById("chat");
+    const userInput = document.getElementById("user-input");
+
+    async function sendMessage() {
+      const message = userInput.value.trim();
+      if (message === "") return;
+
+      appendMessage("user", message);
+      userInput.value = "";
+
+      appendMessage("bot", "Typing...");
+
+      try {
+        const botReply = await getBotReply(message);
+        const lastBotMessage = chat.querySelector(".message.bot:last-child");
+        if (lastBotMessage) {
+          lastBotMessage.innerText = botReply;
+        }
+      } catch (error) {
+        console.error("API error:", error);
+        const lastBotMessage = chat.querySelector(".message.bot:last-child");
+        if (lastBotMessage) {
+          lastBotMessage.innerText = "Oops! Something went wrong 😕";
+        }
+      }
+
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function appendMessage(sender, text) {
+      const messageEl = document.createElement("div");
+      messageEl.classList.add("message", sender);
+      messageEl.innerText = text;
+      chat.appendChild(messageEl);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    async function getBotReply(message) {
+      const url = 'https://chatgpt-42.p.rapidapi.com/aitohuman';
+      const options = {
+        method: 'POST',
+        headers: {
+          'x-rapidapi-key': 'a0a03e1d97msh074217fc318438ep1fe03ejsn44efee5dfa35',
+          'x-rapidapi-host': 'chatgpt-42.p.rapidapi.com',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ text: message })
+      };
+
+      const response = await fetch(url, options);
+      const text = await response.text();
+      const data = JSON.parse(text);
+
+      // Safely extract the message
+      if (data && Array.isArray(data.result) && data.result.length > 0) {
+        return data.result[0].trim();
+      } else {
+        return "Sorry, I didn't get that.";
+      }
+    }
+
+    // Send on Enter key
+    userInput.addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+</html>
